@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+
+require 'yaml'
+
+$:.unshift File.join(File.dirname(__FILE__), '../lib')
+
+conffile = '/etc/cassandra/cassandra.yaml'
+
+require 'sst2s3'
+
+opts = Trollop::options do
+  version "Version #{SST::version}"
+  opt :s3_key, "S3 Key", :type => :string
+  opt :s3_secret, "S3 Secret", :type => :string
+  opt :s3_bucket, "S3 Bucket+Path (eg: bucket_name/path/to/sstdir)", :type => :string
+  opt :dir, "Data Directory", :type => :string
+  opt :tmpdir, "Directory for tempfiles", :type => :string, :default => "/tmp"
+  opt :all, "Backup all keyspaces"
+end
+
+[:s3_key, :s3_secret, :s3_bucket].each do |k|
+  Trollop::die k, "Required option" unless opts[k]
+end
+
+keyspaces = ARGV
+unless keyspaces.length > 0 || opts[:all]
+  Trollop::die "Must specify a keyspace or --all"
+end
+
+bparse = opts[:s3_bucket].split('/')
+unless bparse.length >= 2
+  Trollop::die :s3_bucket, "Invalid format: bucket_name/path/to/sstdir"
+end
+
+bucket_name = bparse[0]
+bucket_path = "/" + bparse[1, bparse.length].join("/")
+
+AWS::S3::Base.establish_connection!(
+    :access_key_id     => opts[:s3_key],
+    :secret_access_key => opts[:s3_secret]
+  )
+
+begin
+  bucket = AWS::S3::Bucket.find(bucket_name)
+rescue
+  $stderr.puts "Error: Unable to locate bucket: #{bucket_name}"
+  exit 1
+end
+
+plist_path = File.join(bucket_path, 'plist.json')
+unless AWS::S3::S3Object.exists?(plist_path, bucket_name)
+  $stderr.puts "Error: Can not locate packing list: #{plist_path}"
+  exit 1
+end
+
+plist = AWS::S3::S3Object.value(plist_path, bucket_name)
+plist = JSON.parse(plist)
+
+if opts[:all]
+  keyspaces = plist['keyspaces'].keys
+end
+
+begin
+  FileUtils::mkdir_p(opts[:dir])
+rescue => e
+  Trollop::die :dir, "Can not make directory #{opts[:dir]}: #{e.message}"
+end
+
+Dir.chdir(opts[:dir]) do
+  keyspaces.each do |ks|
+    unless kslist = plist['keyspaces'][ks]
+      $stderr.puts "Error: The keyspace #{ks} was not in the pkg list"
+      exit 1
+    end
+
+    begin
+      FileUtils::mkdir_p(ks)
+    rescue => e
+      $stderr.puts "Unable to make directory for keyspace #{ks}: #{e.message}"
+      exit 1
+    end
+
+    tmp = "#{opts[:tmpdir]}/s32sst_#{rand 9999999}.tgz"
+    File.open(tmp, "w") do |f|
+      AWS::S3::S3Object.stream(kslist['archive'], bucket_name) do |chunk|
+        f.write chunk
+      end
+    end
+
+    r = system("tar -zxf #{tmp} -C #{ks}")
+    unless r
+      $stderr.puts "Failed to extract keyspace archive: #{tmp}"
+      exit 1
+    end
+
+    FileUtils::rm(tmp)
+
+    kslist['files'].each_pair do |file, v|
+      path = "#{ks}/#{file}"
+      size = File.stat(path).size
+      if Integer(size) != Integer(v['size'])
+        $stderr.puts "Error: Mismatched size for %s. Want %d, got %d" %
+          [path, v['size'], size]
+        exit 1
+      end
+
+      sha1sum = %x{sha1sum #{path} | cut -d ' ' -f 1}.chomp
+      if sha1sum != v['sha1']
+        $stderr.puts "Error: Mismatched SHA1 for %s. Want %s, got %s" %
+          [path, v['sha1'], sha1sum]
+        exit 1
+      end
+    end
+  end
+end

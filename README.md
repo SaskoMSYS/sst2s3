@@ -1,8 +1,18 @@
-= sst2s3
+# sst2s3
 
-Description goes here.
+```
+Usage: sst2s3 [options] [--ks keyspace1 [--ks keyspace2 ...]] || [--all]
 
-== Contributing to sst2s3
+Options:
+   --s3-key <KEY>          S3 Key
+   --s3-secret <SECRET>    S3 Secret Key
+   --s3-bucket <BUCKET>    S3 Bucket Name
+
+   --ks <KEYSPACE>         Keyspace to backup (can be specified multiple times)
+   --all                   Backup all keyspaces
+```
+
+## Contributing to sst2s3
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it
@@ -14,6 +24,6 @@ Description goes here.
 
 == Copyright
 
-Copyright (c) 2011 Mike Heffner. See LICENSE.txt for
+Copyright (c) 2011 Librato, Inc. See LICENSE.txt for
 further details.
 
