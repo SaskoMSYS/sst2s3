@@ -59,6 +59,12 @@ unless AWS::S3::S3Object.exists?(plist_path, bucket_name)
   exit 1
 end
 
+begin
+  FileUtils::mkdir_p(opts[:tmpdir])
+rescue
+  Trollop::die :tmpdir, "Can not make temp directory: #{opts[:tmpdir]}"
+end
+
 plist = AWS::S3::S3Object.value(plist_path, bucket_name)
 plist = JSON.parse(plist)
 

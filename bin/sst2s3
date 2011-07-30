@@ -46,6 +46,12 @@ unless opts[:dir] && File.exist?(opts[:dir])
   Trollop::die(:dir, "Directory not set or invalid")
 end
 
+begin
+  FileUtils::mkdir_p(opts[:tmpdir])
+rescue
+  Trollop::die :tmpdir, "Can not make temp directory: #{opts[:tmpdir]}"
+end
+
 keyspaces = ARGV
 unless keyspaces.length > 0 || opts[:all]
   Trollop::die "Must specify a keyspace or --all"
