@@ -110,7 +110,7 @@ keyspaces.each do |ks|
 
     archive = "#{bucket_path}/#{ks}.tar.gz"
     tmp = "#{opts[:tmpdir]}/archive_#{rand 99999999}.tar.gz"
-    checkpoint = opts[:verbose] ? " --checkpoint" : ""
+    checkpoint = opts[:verbose] ? " --checkpoint=10000" : ""
     r = system("tar#{checkpoint} -zcf #{tmp} #{files.join(" ")}")
     unless r
       $stderr.puts "Error: Unable to compress #{ks} sstables"

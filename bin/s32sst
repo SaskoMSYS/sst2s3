@@ -110,7 +110,7 @@ Dir.chdir(opts[:dir]) do
     end
 
     puts "> Extracting keyspace #{ks}"
-    checkpoint = opts[:verbose] ? " --checkpoint" : ""
+    checkpoint = opts[:verbose] ? " --checkpoint=10000" : ""
     r = system("tar#{checkpoint} -zxf #{tmp} -C #{ks}")
     unless r
       $stderr.puts "Failed to extract keyspace archive: #{tmp}"
