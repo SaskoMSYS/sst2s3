@@ -34,7 +34,7 @@ end
 bucket_name = bparse[0]
 bucket_path = "/" + bparse[1, bparse.length].join("/")
 
-if File.exist?(conffile)
+if !opts[:dir] && File.exist?(conffile)
   begin
     yf = File.open(conffile) {|f| YAML::load(f)}
     opts[:dir] = yf['data_file_directories'][0]
