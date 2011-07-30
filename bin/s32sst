@@ -3,6 +3,7 @@
 require 'rubygems'
 
 require 'yaml'
+require 'etc'
 
 $:.unshift File.join(File.dirname(__FILE__), '../lib')
 
@@ -17,7 +18,9 @@ opts = Trollop::options do
   opt :s3_bucket, "S3 Bucket+Path (eg: bucket_name/path/to/sstdir)", :type => :string
   opt :dir, "Data Directory", :type => :string
   opt :tmpdir, "Directory for tempfiles", :type => :string, :default => "/tmp"
-  opt :all, "Backup all keyspaces"
+  opt :owner, "Override owner for files", :type => :string
+  opt :group, "Override group for files", :type => :string
+  opt :all, "Restore all keyspaces"
 end
 
 [:s3_key, :s3_secret, :s3_bucket].each do |k|
@@ -57,6 +60,12 @@ end
 
 plist = AWS::S3::S3Object.value(plist_path, bucket_name)
 plist = JSON.parse(plist)
+
+if plist['version'] != SST::plist_version
+  $stderr.puts "The plist version (%d) is not supported, want: %d" %
+    [plist['version'], SST::plist_version]
+  exit 1
+end
 
 if opts[:all]
   keyspaces = plist['keyspaces'].keys
@@ -111,6 +120,25 @@ Dir.chdir(opts[:dir]) do
         $stderr.puts "Error: Mismatched SHA1 for %s. Want %s, got %s" %
           [path, v['sha1'], sha1sum]
         exit 1
+      end
+
+      newowner = opts[:owner] || v['owner']
+      if newowner
+        # Check that it exists locally
+        pwent = Etc.getpwnam(newowner) rescue nil
+        newowner = nil unless pwent
+      end
+
+      newgroup = opts[:group] || v['group']
+      if newgroup
+        # Check that it exists locally
+        pwgrp = Etc.getgrnam(newgroup) rescue nil
+        newgroup = nil unless pwgrp
+      end
+
+      # If either are set, chown the file
+      if newowner || newgroup
+        FileUtils.chown(newowner, newgroup, path)
       end
     end
   end

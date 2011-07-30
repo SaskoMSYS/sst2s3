@@ -3,6 +3,7 @@
 require 'rubygems'
 
 require 'yaml'
+require 'etc'
 
 $:.unshift File.join(File.dirname(__FILE__), '../lib')
 
@@ -69,7 +70,7 @@ rescue
   exit 1
 end
 
-pkglist = {:keyspaces => {}}
+pkglist = {:keyspaces => {}, :version => SST::plist_version}
 keyspaces.each do |ks|
   ksdir = File.join(opts[:dir], ks)
   files = Dir.glob(File.join(ksdir, '*')).
@@ -83,9 +84,19 @@ keyspaces.each do |ks|
         exit 1
       end
 
-      size = File.stat(f).size
+      stat = File.stat(f)
 
-      pkglist[:keyspaces][ks][:files][f] = {:sha1 => sha1sum, :size => size}
+      fmeta = {
+        :sha1 => sha1sum,
+        :size => stat.size
+      }
+
+      pwuid = Etc.getpwuid(stat.uid) rescue nil
+      fmeta[:owner] = pwuid.name if pwuid
+      grgid = Etc.getgrgid(stat.gid) rescue nil
+      fmeta[:group] = grgid.name if grgid
+
+      pkglist[:keyspaces][ks][:files][f] = fmeta
     end
 
     archive = "#{bucket_path}/#{ks}.tar.gz"
