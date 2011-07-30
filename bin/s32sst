@@ -85,6 +85,9 @@ Dir.chdir(opts[:dir]) do
       exit 1
     end
 
+    # Remove all existing datafiles
+    FileUtils::rm_rf(ks)
+
     begin
       FileUtils::mkdir_p(ks)
     rescue => e
