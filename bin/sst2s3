@@ -99,6 +99,8 @@ keyspaces.each do |ks|
       pkglist[:keyspaces][ks][:files][f] = fmeta
     end
 
+    puts "> Archiving keyspace #{ks}"
+
     archive = "#{bucket_path}/#{ks}.tar.gz"
     tmp = "#{opts[:tmpdir]}/archive_#{rand 99999999}.tar.gz"
     r = system("tar -zcf #{tmp} #{files.join(" ")}")
@@ -106,10 +108,12 @@ keyspaces.each do |ks|
       $stderr.puts "Error: Unable to compress #{ks} sstables"
       exit 1
     end
+
     #
     # XXX: Stream tar output directly to upload. S3Object.store()
     # requires the size though, http limitation?
     #
+    puts "> Uploading keyspace #{ks}"
     AWS::S3::S3Object.store(archive, File.open(tmp), bucket_name)
     FileUtils::rm(tmp)
     pkglist[:keyspaces][ks][:archive] = archive

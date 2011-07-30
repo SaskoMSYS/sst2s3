@@ -91,6 +91,7 @@ Dir.chdir(opts[:dir]) do
       exit 1
     end
 
+    puts "> Downloading keyspace #{ks}"
     tmp = "#{opts[:tmpdir]}/s32sst_#{rand 9999999}.tgz"
     File.open(tmp, "w") do |f|
       AWS::S3::S3Object.stream(kslist['archive'], bucket_name) do |chunk|
@@ -98,6 +99,7 @@ Dir.chdir(opts[:dir]) do
       end
     end
 
+    puts "> Extracting keyspace #{ks}"
     r = system("tar -zxf #{tmp} -C #{ks}")
     unless r
       $stderr.puts "Failed to extract keyspace archive: #{tmp}"
