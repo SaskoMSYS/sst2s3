@@ -20,6 +20,7 @@ opts = Trollop::options do
   opt :tmpdir, "Directory for tempfiles", :type => :string, :default => "/tmp"
   opt :owner, "Override owner for files", :type => :string
   opt :group, "Override group for files", :type => :string
+  opt :verbose, "Print checkpoints during extract"
   opt :all, "Restore all keyspaces"
 end
 
@@ -100,7 +101,8 @@ Dir.chdir(opts[:dir]) do
     end
 
     puts "> Extracting keyspace #{ks}"
-    r = system("tar -zxf #{tmp} -C #{ks}")
+    checkpoint = opts[:verbose] ? " --checkpoint" : ""
+    r = system("tar#{checkpoint} -zxf #{tmp} -C #{ks}")
     unless r
       $stderr.puts "Failed to extract keyspace archive: #{tmp}"
       exit 1

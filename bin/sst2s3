@@ -18,6 +18,7 @@ opts = Trollop::options do
   opt :s3_bucket, "S3 Bucket+Path (eg: bucket_name/path/to/storedir)", :type => :string
   opt :dir, "Data Directory", :type => :string
   opt :tmpdir, "Directory for tempfiles", :type => :string, :default => "/tmp"
+  opt :verbose, "Print checkpoints when archiving"
   opt :all, "Backup all keyspaces"
 end
 
@@ -103,7 +104,8 @@ keyspaces.each do |ks|
 
     archive = "#{bucket_path}/#{ks}.tar.gz"
     tmp = "#{opts[:tmpdir]}/archive_#{rand 99999999}.tar.gz"
-    r = system("tar -zcf #{tmp} #{files.join(" ")}")
+    checkpoint = opts[:verbose] ? " --checkpoint" : ""
+    r = system("tar#{checkpoint} -zcf #{tmp} #{files.join(" ")}")
     unless r
       $stderr.puts "Error: Unable to compress #{ks} sstables"
       exit 1
