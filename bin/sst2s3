@@ -83,6 +83,13 @@ keyspaces.each do |ks|
   files = Dir.glob(File.join(ksdir, '*')).
     reject{|f| File.directory?(f)}.collect{|f| File.basename(f)}
   pkglist[:keyspaces][ks] = {:files => {}}
+
+  stat = File.stat(ksdir)
+  pwuid = Etc.getpwuid(stat.uid) rescue nil
+  pkglist[:keyspaces][ks][:owner] = pwuid.name if pwuid
+  grgid = Etc.getgrgid(stat.gid) rescue nil
+  pkglist[:keyspaces][ks][:group] = grgid.name if grgid
+
   Dir.chdir(ksdir) do
     files.each do |f|
       sha1sum = %x{sha1sum #{f} | cut -d ' ' -f 1}.chomp

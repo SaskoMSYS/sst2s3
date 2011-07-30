@@ -113,6 +113,26 @@ Dir.chdir(opts[:dir]) do
       exit 1
     end
 
+    newowner = opts[:owner] || kslist['owner']
+    if newowner
+      # Check that it exists locally
+      pwent = Etc.getpwnam(newowner) rescue nil
+      newowner = nil unless pwent
+    end
+
+    newgroup = opts[:group] || kslist['group']
+    if newgroup
+      # Check that it exists locally
+      pwgrp = Etc.getgrnam(newgroup) rescue nil
+      newgroup = nil unless pwgrp
+    end
+
+    # If either are set, chown the file
+    if newowner || newgroup
+      FileUtils.chown(newowner, newgroup, ks)
+    end
+
+
     puts "> Downloading keyspace #{ks}"
     tmp = "#{opts[:tmpdir]}/s32sst_#{rand 9999999}.tgz"
     File.open(tmp, "w") do |f|
