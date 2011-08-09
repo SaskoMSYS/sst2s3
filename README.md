@@ -15,6 +15,7 @@ the current data directory.
 1. Start cassandra on new node.
 
 Notes:
+
 * A packing list will be uploaded that includes SHA1 sums to verify
 sstable integrity during extraction.
 * The owner/group name of each sstable file will be included in the
