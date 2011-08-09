@@ -64,6 +64,16 @@ Options:
            --help, -h:   Show this message
 ```
 
+## TODO
+
+In no real order.
+
+* Multi-part uploads to handle resuming after failures in large files
+  (and perform some number of retries).
+* Perform upload/download while compacting/extracting
+  next keyspace for better concurrency.
+
+
 ## Contributing to sst2s3
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
